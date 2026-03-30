@@ -1,0 +1,10 @@
+{
+  "name": "remote-cinema-host-controller",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal local host controller for Remote Cinema",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  }
+}

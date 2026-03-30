@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Remote Cinema Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Remote Cinema</p>
+        <h1>Viewer Web</h1>
+        <p class="subtitle">
+          Join a private room, subscribe to live room state, and use HLS or WHEP
+          playback endpoints exposed by the backend.
+        </p>
+      </section>
+
+      <section class="panel join-panel">
+        <form id="join-form" class="join-form">
+          <label>
+            Room ID
+            <input id="room-id" name="roomId" placeholder="ABC123" required />
+          </label>
+
+          <label>
+            Viewer Name
+            <input id="viewer-name" name="viewerName" placeholder="viewer_1" />
+          </label>
+
+          <label>
+            Room Service URL
+            <input id="room-service-url" name="roomServiceUrl" />
+          </label>
+
+          <button id="join-button" type="submit">Join Room</button>
+        </form>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Playback</h2>
+            <span id="connection-badge" class="badge badge-idle">idle</span>
+          </div>
+
+          <video
+            id="player"
+            class="player"
+            controls
+            playsinline
+            preload="metadata"
+          ></video>
+
+          <p id="player-note" class="note">
+            Waiting for room join. Native HLS playback is only available in some
+            browsers.
+          </p>
+
+          <div class="actions">
+            <button id="start-webrtc" class="action-button" type="button">
+              Start WebRTC
+            </button>
+            <button id="stop-webrtc" class="action-button action-button-secondary" type="button">
+              Stop WebRTC
+            </button>
+            <a id="open-hls" class="action-link disabled" href="#" target="_blank" rel="noreferrer">
+              Open HLS
+            </a>
+            <a id="open-whep" class="action-link disabled" href="#" target="_blank" rel="noreferrer">
+              Open WHEP
+            </a>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Room State</h2>
+            <span id="room-badge" class="badge badge-idle">not joined</span>
+          </div>
+          <dl class="state-list">
+            <div>
+              <dt>Room</dt>
+              <dd id="state-room-id">-</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd id="state-session-id">-</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd id="state-status">-</dd>
+            </div>
+            <div>
+              <dt>Stream</dt>
+              <dd id="state-stream-status">-</dd>
+            </div>
+            <div>
+              <dt>Playback</dt>
+              <dd id="state-playing">-</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd id="state-time">-</dd>
+            </div>
+            <div>
+              <dt>Viewers</dt>
+              <dd id="state-viewers">-</dd>
+            </div>
+          </dl>
+        </section>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Transport URLs</h2>
+          </div>
+          <dl class="state-list compact">
+            <div>
+              <dt>HLS</dt>
+              <dd id="url-hls">-</dd>
+            </div>
+            <div>
+              <dt>WHEP</dt>
+              <dd id="url-whep">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Event Log</h2>
+          </div>
+          <pre id="event-log" class="event-log">viewer booted</pre>
+        </section>
+      </section>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>

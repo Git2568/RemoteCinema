@@ -1,0 +1,15 @@
+{
+  "name": "remote-cinema-room-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal room service skeleton for Remote Cinema",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}

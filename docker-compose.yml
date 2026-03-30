@@ -1,0 +1,39 @@
+services:
+  srs:
+    image: ossrs/srs:5
+    container_name: remote-cinema-srs
+    environment:
+      CANDIDATE: ${PUBLIC_HOST:-localhost}
+    command: ["objs/srs", "-c", "conf/rtmp2rtc.conf"]
+    ports:
+      - "${SRS_RTMP_PORT:-1935}:1935"
+      - "${SRS_HTTP_PORT:-8080}:8080"
+      - "${SRS_API_PORT:-1985}:1985"
+      - "${SRS_RTC_UDP_PORT:-8000}:8000/udp"
+    restart: unless-stopped
+
+  room-service:
+    build:
+      context: ./services/room-service
+    container_name: remote-cinema-room-service
+    environment:
+      PORT: 3000
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
+      SRS_RTMP_PORT: ${SRS_RTMP_PORT:-1935}
+      SRS_HTTP_PORT: ${SRS_HTTP_PORT:-8080}
+      SRS_API_PORT: ${SRS_API_PORT:-1985}
+    ports:
+      - "${ROOM_SERVICE_PORT:-3000}:3000"
+    depends_on:
+      - srs
+    restart: unless-stopped
+
+  viewer-web:
+    build:
+      context: ./services/viewer-web
+    container_name: remote-cinema-viewer-web
+    ports:
+      - "${VIEWER_WEB_PORT:-5173}:80"
+    depends_on:
+      - room-service
+    restart: unless-stopped
