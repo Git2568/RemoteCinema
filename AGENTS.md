@@ -85,6 +85,8 @@ The product should hide:
 
 Read these only when relevant:
 
+- Three-machine deployment: `docs/deployment/deployment.md`
+- Three-machine deployment CN: `docs/deployment/deployment_CN.md`
 - Product/system spec: `docs/product/system-spec.md`
 - Room control protocol: `docs/protocol/room-websocket-protocol.md`
 - Host stream lifecycle: `docs/streaming/host-ffmpeg-supervisor-design.md`

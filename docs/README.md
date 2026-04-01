@@ -7,6 +7,9 @@ This directory is organized by implementation concern.
 - `product/`
   Product constraints, UX contract, system scope, delivery phases.
 
+- `deployment/`
+  Deployment procedures and topology documents, including English and Chinese variants.
+
 - `protocol/`
   Room service contracts, WebSocket events, sync semantics, reconnect rules.
 
@@ -15,6 +18,8 @@ This directory is organized by implementation concern.
 
 ## Current Files
 
+- [deployment/deployment.md](D:\VibeCoding\RemoteCinema\docs\deployment\deployment.md)
+- [deployment/deployment_CN.md](D:\VibeCoding\RemoteCinema\docs\deployment\deployment_CN.md)
 - [product/system-spec.md](D:\VibeCoding\RemoteCinema\docs\product\system-spec.md)
 - [protocol/room-websocket-protocol.md](D:\VibeCoding\RemoteCinema\docs\protocol\room-websocket-protocol.md)
 - [streaming/host-ffmpeg-supervisor-design.md](D:\VibeCoding\RemoteCinema\docs\streaming\host-ffmpeg-supervisor-design.md)
