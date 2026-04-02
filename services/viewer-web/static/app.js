@@ -13,11 +13,15 @@ const state = {
   joinedViewerName: ""
 };
 
+const MAX_EVENT_LOG_ENTRIES = 60;
+const eventEntries = ["viewer booted"];
+
 const els = {
   pageBody: document.body,
   starfield: document.getElementById("starfield"),
   joinForm: document.getElementById("join-form"),
   joinButton: document.getElementById("join-button"),
+  reconnectButton: document.getElementById("reconnect-button"),
   leaveButton: document.getElementById("leave-button"),
   roomId: document.getElementById("room-id"),
   viewerName: document.getElementById("viewer-name"),
@@ -68,7 +72,8 @@ function buildStarfield() {
 function updateJoinedUi() {
   els.pageBody.classList.toggle("room-active", state.joined);
   els.leaveButton.disabled = !state.joined;
-  els.joinButton.textContent = state.joined ? "Rejoin Room" : "Join Room";
+  els.reconnectButton.disabled = !state.joined;
+  els.joinButton.textContent = "Join Room";
 }
 
 function getDefaultRoomServiceUrl() {
@@ -83,9 +88,19 @@ function getWsBaseUrl() {
 }
 
 function logEvent(message, payload) {
+  if (message === "ws.heartbeat.ack") {
+    return;
+  }
+
   const ts = new Date().toLocaleTimeString();
   const suffix = payload ? ` ${JSON.stringify(payload, null, 2)}` : "";
-  els.eventLog.textContent = `[${ts}] ${message}${suffix}\n${els.eventLog.textContent}`.trim();
+  eventEntries.unshift(`[${ts}] ${message}${suffix}`);
+
+  if (eventEntries.length > MAX_EVENT_LOG_ENTRIES) {
+    eventEntries.length = MAX_EVENT_LOG_ENTRIES;
+  }
+
+  els.eventLog.textContent = eventEntries.join("\n");
 }
 
 function setPlayerNote(message) {
@@ -220,14 +235,42 @@ function leaveRoom(reason = "viewer.left_local") {
   window.history.replaceState({}, "", url);
 }
 
-function waitForIceGatheringComplete(pc) {
+function reconnectStream() {
+  if (!state.joined || !state.sessionId) {
+    return;
+  }
+
+  cleanupWebRtc();
+  setBadge(els.connectionBadge, "reconnecting", "badge-idle");
+  setPlayerNote("Reconnecting stream...");
+  logEvent("viewer.reconnect_stream");
+
+  if (state.transport?.whepUrl) {
+    startWebRtcPlayback();
+    return;
+  }
+
+  if (state.ws?.readyState === WebSocket.OPEN) {
+    state.ws.send(JSON.stringify({ type: "room.state.get" }));
+  } else {
+    connectWebSocket();
+  }
+}
+
+function waitForIceGatheringComplete(pc, timeoutMs = 400) {
   if (pc.iceGatheringState === "complete") {
     return Promise.resolve();
   }
 
   return new Promise((resolve) => {
+    const timer = window.setTimeout(() => {
+      pc.removeEventListener("icegatheringstatechange", onChange);
+      resolve();
+    }, timeoutMs);
+
     const onChange = () => {
       if (pc.iceGatheringState === "complete") {
+        window.clearTimeout(timer);
         pc.removeEventListener("icegatheringstatechange", onChange);
         resolve();
       }
@@ -480,10 +523,6 @@ async function joinRoom(event) {
   els.joinButton.disabled = true;
 
   try {
-    if (state.joined) {
-      leaveRoom("viewer.rejoin");
-    }
-
     state.roomServiceUrl = (els.roomServiceUrl.value || getDefaultRoomServiceUrl()).replace(/\/$/, "");
     state.roomId = els.roomId.value.trim().toUpperCase();
     state.joinedViewerName =
@@ -550,6 +589,7 @@ function bootstrap() {
   els.stopWebrtc.disabled = true;
 
   els.joinForm.addEventListener("submit", joinRoom);
+  els.reconnectButton.addEventListener("click", reconnectStream);
   els.leaveButton.addEventListener("click", () => {
     leaveRoom("viewer.left_room");
   });

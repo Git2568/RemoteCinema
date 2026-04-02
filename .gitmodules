@@ -1,0 +1,3 @@
+[submodule "services/host-app-flutter"]
+	path = services/host-app-flutter
+	url = https://github.com/Git2568/host-app-flutter.git

@@ -92,6 +92,7 @@ body.room-active .starfield {
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
   animation: twinkle var(--twinkle-duration, 4.4s) ease-in-out infinite;
   animation-delay: var(--twinkle-delay, 0s);
+  will-change: opacity, transform;
 }
 
 .star.star-warm {
@@ -156,11 +157,16 @@ h1 {
 
 .join-panel,
 .panel {
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 24px;
   box-shadow: var(--shadow);
+}
+
+body.room-active .join-panel,
+body.room-active .panel {
+  backdrop-filter: blur(7px);
 }
 
 .join-panel {
@@ -177,7 +183,7 @@ h1 {
 
 .join-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 

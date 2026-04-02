@@ -117,6 +117,28 @@ Core components:
 
 ---
 
+## Repository Layout
+
+Primary subprojects in this repository:
+
+- `services/room-service`
+  Node.js room control service
+- `services/viewer-web`
+  Browser viewer client
+- `services/host-controller`
+  Existing Node.js host-side FFmpeg launcher
+- `services/host-app-flutter`
+  Flutter desktop host client subproject
+
+`services/host-app-flutter` should be treated as the new host application workspace inside Remote Cinema.
+It is the path for moving from a CLI host flow to the intended product flow:
+
+```text
+Open app -> choose local video -> create room -> start
+```
+
+---
+
 ## Current Bootstrap
 
 The repository now includes a minimal runnable backend bootstrap:
@@ -146,7 +168,7 @@ What is implemented right now:
 
 What is not implemented yet:
 
-- host desktop UI
+- fully integrated host desktop UI
 - full viewer playback stack
 - robust FFmpeg supervisor behavior
 - persistent storage
@@ -238,6 +260,30 @@ Current limitation:
 - WebRTC is implemented as a minimal direct WHEP client, without reconnect hardening yet
 - HLS playback still depends on native browser support
 - in browsers without native HLS support, the page still shows live room state and transport URLs
+
+---
+
+## Flutter Host App
+
+The repository now includes a Flutter host client subproject:
+
+[services/host-app-flutter/README.md](D:\VibeCoding\RemoteCinema\services\host-app-flutter\README.md)
+
+Use it when working on the product host flow instead of the legacy CLI-only host path.
+
+Typical local workflow:
+
+```powershell
+Set-Location services/host-app-flutter
+flutter pub get
+flutter run -d windows
+```
+
+Notes:
+
+- It is a subproject with its own `pubspec.yaml`.
+- It should be developed independently from the Node.js services.
+- We intentionally avoid `flutter analyze` / `dart analyze` in this repository workflow unless explicitly requested.
 
 ---
 
