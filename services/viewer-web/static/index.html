@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div id="starfield" class="starfield" aria-hidden="true"></div>
     <main class="app-shell">
       <section class="hero">
         <p class="eyebrow">Remote Cinema</p>
@@ -34,7 +35,12 @@
             <input id="room-service-url" name="roomServiceUrl" />
           </label>
 
-          <button id="join-button" type="submit">Join Room</button>
+          <div class="join-actions">
+            <button id="join-button" type="submit">Join Room</button>
+            <button id="leave-button" class="secondary-button" type="button" disabled>
+              Leave Room
+            </button>
+          </div>
         </form>
       </section>
 
@@ -135,6 +141,16 @@
           </div>
           <pre id="event-log" class="event-log">viewer booted</pre>
         </section>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Participants</h2>
+          <span id="participants-count" class="badge badge-idle">0 online</span>
+        </div>
+        <div id="participants-list" class="participants-list">
+          <p class="participants-empty">Join a room to see who is inside.</p>
+        </div>
       </section>
     </main>
 

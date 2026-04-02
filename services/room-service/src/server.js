@@ -39,6 +39,34 @@ function createPlaybackSnapshot(room) {
   };
 }
 
+function getRoomParticipants(room) {
+  const participants = [];
+
+  const hostSession = sessions.get(room.hostSessionId);
+  if (hostSession) {
+    participants.push({
+      sessionId: hostSession.sessionId,
+      userId: hostSession.userId,
+      role: hostSession.role
+    });
+  }
+
+  for (const viewerSessionId of room.viewerSessionIds) {
+    const viewerSession = sessions.get(viewerSessionId);
+    if (!viewerSession) {
+      continue;
+    }
+
+    participants.push({
+      sessionId: viewerSession.sessionId,
+      userId: viewerSession.userId,
+      role: viewerSession.role
+    });
+  }
+
+  return participants;
+}
+
 function createTransport(roomId, publishToken) {
   const streamName = roomId;
   return {
@@ -102,6 +130,7 @@ function getRoomState(room) {
     viewerCount: room.viewerSessionIds.size,
     maxViewers: room.maxViewers,
     streamKey: room.streamKey,
+    participants: getRoomParticipants(room),
     playback: createPlaybackSnapshot(room),
     transport: {
       primary: "webrtc",

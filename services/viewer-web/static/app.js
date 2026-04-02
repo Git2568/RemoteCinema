@@ -9,12 +9,16 @@ const state = {
   peerConnection: null,
   remoteStream: null,
   webrtcActive: false,
-  webrtcStarting: false
+  webrtcStarting: false,
+  joinedViewerName: ""
 };
 
 const els = {
+  pageBody: document.body,
+  starfield: document.getElementById("starfield"),
   joinForm: document.getElementById("join-form"),
   joinButton: document.getElementById("join-button"),
+  leaveButton: document.getElementById("leave-button"),
   roomId: document.getElementById("room-id"),
   viewerName: document.getElementById("viewer-name"),
   roomServiceUrl: document.getElementById("room-service-url"),
@@ -27,6 +31,8 @@ const els = {
   playing: document.getElementById("state-playing"),
   time: document.getElementById("state-time"),
   viewers: document.getElementById("state-viewers"),
+  participantsCount: document.getElementById("participants-count"),
+  participantsList: document.getElementById("participants-list"),
   hlsUrl: document.getElementById("url-hls"),
   whepUrl: document.getElementById("url-whep"),
   openHls: document.getElementById("open-hls"),
@@ -37,6 +43,33 @@ const els = {
   playerNote: document.getElementById("player-note"),
   eventLog: document.getElementById("event-log")
 };
+
+function buildStarfield() {
+  if (!els.starfield || els.starfield.childElementCount > 0) {
+    return;
+  }
+
+  const totalStars = 32;
+  for (let index = 0; index < totalStars; index += 1) {
+    const star = document.createElement("span");
+    const size = 1 + Math.random() * 2.4;
+    const tone = index % 5 === 0 ? "star-warm" : index % 3 === 0 ? "star-cool" : "";
+    star.className = `star ${tone}`.trim();
+    star.style.width = `${size}px`;
+    star.style.height = `${size}px`;
+    star.style.left = `${Math.random() * 100}%`;
+    star.style.top = `${Math.random() * 100}%`;
+    star.style.setProperty("--twinkle-duration", `${3.8 + Math.random() * 3.6}s`);
+    star.style.setProperty("--twinkle-delay", `${Math.random() * 4.2}s`);
+    els.starfield.append(star);
+  }
+}
+
+function updateJoinedUi() {
+  els.pageBody.classList.toggle("room-active", state.joined);
+  els.leaveButton.disabled = !state.joined;
+  els.joinButton.textContent = state.joined ? "Rejoin Room" : "Join Room";
+}
 
 function getDefaultRoomServiceUrl() {
   const protocol = window.location.protocol === "https:" ? "https:" : "http:";
@@ -100,6 +133,91 @@ function cleanupWebRtc() {
   els.player.srcObject = null;
   els.startWebrtc.disabled = false;
   els.stopWebrtc.disabled = true;
+}
+
+function stopHeartbeat() {
+  if (state.heartbeatId) {
+    clearInterval(state.heartbeatId);
+    state.heartbeatId = null;
+  }
+}
+
+function resetRoomUi() {
+  els.roomStateId.textContent = "-";
+  els.sessionId.textContent = "-";
+  els.status.textContent = "-";
+  els.streamStatus.textContent = "-";
+  els.playing.textContent = "-";
+  els.time.textContent = "-";
+  els.viewers.textContent = "-";
+  els.hlsUrl.textContent = "-";
+  els.whepUrl.textContent = "-";
+  setBadge(els.connectionBadge, "idle", "badge-idle");
+  setBadge(els.roomBadge, "not joined", "badge-idle");
+  setBadge(els.participantsCount, "0 online", "badge-idle");
+  setLink(els.openHls, null);
+  setLink(els.openWhep, null);
+  els.participantsList.innerHTML =
+    '<p class="participants-empty">Join a room to see who is inside.</p>';
+  setPlayerNote("Waiting for room join. Native HLS playback is only available in some browsers.");
+  els.player.removeAttribute("src");
+  els.player.load();
+}
+
+function renderParticipants(participants = []) {
+  const total = participants.length;
+  setBadge(
+    els.participantsCount,
+    `${total} online`,
+    total > 0 ? "badge-live" : "badge-idle"
+  );
+
+  if (total === 0) {
+    els.participantsList.innerHTML =
+      '<p class="participants-empty">No participants are visible yet.</p>';
+    return;
+  }
+
+  els.participantsList.innerHTML = participants
+    .map((participant) => {
+      const roleLabel = participant.role === "host" ? "Host" : "Viewer";
+      const youLabel = participant.sessionId === state.sessionId ? "You" : participant.userId;
+      return `
+        <article class="participant-card">
+          <div>
+            <p class="participant-name">${youLabel}</p>
+            <p class="participant-meta">${participant.userId}</p>
+          </div>
+          <span class="participant-role">${roleLabel}</span>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function leaveRoom(reason = "viewer.left_local") {
+  if (state.ws) {
+    const ws = state.ws;
+    state.ws = null;
+    ws.close();
+  }
+
+  stopHeartbeat();
+  cleanupWebRtc();
+  state.transport = null;
+  state.joined = false;
+  state.roomId = "";
+  state.sessionId = "";
+  state.joinedViewerName = "";
+  resetRoomUi();
+  updateJoinedUi();
+  logEvent(reason);
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("roomId");
+  url.searchParams.delete("roomServiceUrl");
+  url.searchParams.delete("viewerName");
+  window.history.replaceState({}, "", url);
 }
 
 function waitForIceGatheringComplete(pc) {
@@ -282,6 +400,7 @@ function updateRoomState(room) {
     room.streamStatus === "ready" ? "badge-live" : "badge-idle"
   );
 
+  renderParticipants(room.participants);
   updateTransport(room.transport);
 }
 
@@ -299,9 +418,7 @@ function connectWebSocket() {
     setBadge(els.connectionBadge, "connected", "badge-live");
     logEvent("ws.connected");
 
-    if (state.heartbeatId) {
-      clearInterval(state.heartbeatId);
-    }
+    stopHeartbeat();
 
     state.heartbeatId = window.setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -338,11 +455,17 @@ function connectWebSocket() {
   });
 
   ws.addEventListener("close", () => {
-    setBadge(els.connectionBadge, "closed", "badge-warn");
-    logEvent("ws.closed");
-    if (state.heartbeatId) {
-      clearInterval(state.heartbeatId);
-      state.heartbeatId = null;
+    stopHeartbeat();
+
+    if (state.ws === ws) {
+      state.ws = null;
+    }
+
+    if (state.joined) {
+      setBadge(els.connectionBadge, "closed", "badge-warn");
+      logEvent("ws.closed");
+    } else {
+      setBadge(els.connectionBadge, "idle", "badge-idle");
     }
   });
 
@@ -357,8 +480,14 @@ async function joinRoom(event) {
   els.joinButton.disabled = true;
 
   try {
+    if (state.joined) {
+      leaveRoom("viewer.rejoin");
+    }
+
     state.roomServiceUrl = (els.roomServiceUrl.value || getDefaultRoomServiceUrl()).replace(/\/$/, "");
     state.roomId = els.roomId.value.trim().toUpperCase();
+    state.joinedViewerName =
+      els.viewerName.value.trim() || `viewer_${Math.random().toString(16).slice(2, 8)}`;
 
     const response = await fetch(`${state.roomServiceUrl}/rooms/${state.roomId}/join`, {
       method: "POST",
@@ -366,7 +495,7 @@ async function joinRoom(event) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        userId: els.viewerName.value.trim() || `viewer_${Math.random().toString(16).slice(2, 8)}`
+        userId: state.joinedViewerName
       })
     });
 
@@ -378,6 +507,7 @@ async function joinRoom(event) {
     const payload = await response.json();
     state.sessionId = payload.sessionId;
     state.joined = true;
+    updateJoinedUi();
 
     els.sessionId.textContent = state.sessionId;
     setBadge(els.connectionBadge, "joining", "badge-idle");
@@ -398,6 +528,8 @@ async function joinRoom(event) {
     }
     window.history.replaceState({}, "", url);
   } catch (error) {
+    state.joined = false;
+    updateJoinedUi();
     logEvent("join.error", { message: error.message });
     setBadge(els.connectionBadge, "join failed", "badge-warn");
     setPlayerNote(error.message);
@@ -407,16 +539,20 @@ async function joinRoom(event) {
 }
 
 function bootstrap() {
+  buildStarfield();
   const params = new URLSearchParams(window.location.search);
   els.roomServiceUrl.value = params.get("roomServiceUrl") || getDefaultRoomServiceUrl();
   els.roomId.value = params.get("roomId") || "";
   els.viewerName.value = params.get("viewerName") || "";
-  setBadge(els.connectionBadge, "idle", "badge-idle");
-  setBadge(els.roomBadge, "not joined", "badge-idle");
+  resetRoomUi();
+  updateJoinedUi();
   els.startWebrtc.disabled = false;
   els.stopWebrtc.disabled = true;
 
   els.joinForm.addEventListener("submit", joinRoom);
+  els.leaveButton.addEventListener("click", () => {
+    leaveRoom("viewer.left_room");
+  });
   els.startWebrtc.addEventListener("click", startWebRtcPlayback);
   els.stopWebrtc.addEventListener("click", () => {
     cleanupWebRtc();

@@ -21,13 +21,103 @@ body {
   min-height: 100vh;
   font-family: Georgia, "Times New Roman", serif;
   color: var(--ink);
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(187, 79, 43, 0.18), transparent 26%),
     radial-gradient(circle at top right, rgba(31, 108, 90, 0.14), transparent 24%),
     linear-gradient(180deg, #f7f2e8 0%, #efe4d0 100%);
+  transition: background 600ms ease, color 300ms ease;
+}
+
+body.room-active {
+  --surface: rgba(10, 18, 38, 0.78);
+  --surface-strong: rgba(12, 23, 44, 0.88);
+  --ink: #eef4ff;
+  --muted: rgba(209, 220, 244, 0.82);
+  --line: rgba(150, 177, 230, 0.18);
+  --accent: #f5b35d;
+  --accent-2: #7ad8ff;
+  --warn: #ff8f8f;
+  --shadow: 0 26px 80px rgba(3, 8, 24, 0.42);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(88, 118, 255, 0.2), transparent 28%),
+    radial-gradient(circle at 80% 0%, rgba(0, 209, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 50% 120%, rgba(255, 179, 92, 0.18), transparent 24%),
+    linear-gradient(180deg, #050914 0%, #081224 44%, #111936 100%);
+}
+
+.starfield {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+body.room-active .starfield {
+  opacity: 1;
+}
+
+.starfield::before,
+.starfield::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.starfield::before {
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255, 255, 255, 0.6) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 72% 12%, rgba(255, 250, 225, 0.7) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 24% 68%, rgba(185, 224, 255, 0.52) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 84% 62%, rgba(255, 255, 255, 0.54) 0 1px, transparent 2px),
+    radial-gradient(circle at 60% 38%, rgba(255, 238, 199, 0.48) 0 1px, transparent 2px);
+  opacity: 0.45;
+}
+
+.starfield::after {
+  background:
+    radial-gradient(circle at 35% 24%, rgba(122, 216, 255, 0.18), transparent 0 36%),
+    radial-gradient(circle at 76% 26%, rgba(255, 187, 111, 0.14), transparent 0 28%),
+    radial-gradient(circle at 18% 80%, rgba(121, 141, 255, 0.16), transparent 0 32%);
+  mix-blend-mode: screen;
+}
+
+.star {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  animation: twinkle var(--twinkle-duration, 4.4s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+.star.star-warm {
+  background: rgba(255, 232, 186, 0.9);
+}
+
+.star.star-cool {
+  background: rgba(176, 224, 255, 0.9);
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.24;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 0.95;
+    transform: scale(1.08);
+  }
 }
 
 .app-shell {
+  position: relative;
+  z-index: 1;
   width: min(1180px, calc(100vw - 32px));
   margin: 0 auto;
   padding: 40px 0 60px;
@@ -85,6 +175,12 @@ h1 {
   align-items: end;
 }
 
+.join-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 .join-form label {
   display: flex;
   flex-direction: column;
@@ -117,6 +213,15 @@ h1 {
 .join-form button:disabled {
   cursor: progress;
   opacity: 0.7;
+}
+
+.join-form .secondary-button {
+  background: rgba(30, 27, 24, 0.1);
+  color: var(--ink);
+}
+
+.join-form .secondary-button:disabled {
+  cursor: not-allowed;
 }
 
 .grid {
@@ -221,6 +326,10 @@ h1 {
   background: rgba(255, 250, 240, 0.9);
 }
 
+body.room-active .action-link {
+  background: rgba(8, 18, 40, 0.72);
+}
+
 .action-link.disabled {
   pointer-events: none;
   opacity: 0.55;
@@ -270,9 +379,65 @@ h1 {
   line-height: 1.45;
 }
 
+.participants-list {
+  display: grid;
+  gap: 12px;
+}
+
+.participants-empty {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.participant-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 250, 240, 0.58);
+}
+
+body.room-active .participant-card {
+  background: rgba(10, 18, 38, 0.62);
+}
+
+.participant-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.participant-meta {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.participant-role {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(31, 108, 90, 0.14);
+  color: var(--accent-2);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 860px) {
   .join-form,
   .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .join-actions {
     grid-template-columns: 1fr;
   }
 

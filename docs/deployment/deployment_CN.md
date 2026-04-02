@@ -142,6 +142,10 @@ http://<PUBLIC_HOST>:5173/
 
 由于当前 host 逻辑是本地 Node 脚本，分享者电脑需要有这份仓库代码：
 
+其中
+PUBLIC_HOST 需要替换成部署服务器的主机公网IP；
+"D:\path\to\movie.mp4" 应当替换为你的分享的文件的路径
+
 ```powershell
 node services/host-controller/src/index.js `
   --room-service-url http://<PUBLIC_HOST>:3000 `
